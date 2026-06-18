@@ -1,0 +1,9 @@
+{
+  "APIMART_API_KEY": "",
+  "APIMART_BASE_URL": "https://api.apimart.ai",
+  "WECHAT_APPID": "",
+  "WECHAT_APPSECRET": "",
+  "EXA_API_KEY": "",
+  "CLAUDE_MODEL": "claude-sonnet-4-5",
+  "IMAGE_MODEL": "nano-banana"
+}

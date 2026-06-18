@@ -1,0 +1,1275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公众号发布工作台</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --panel: #171a21;
+    --panel-2: #1f232c;
+    --border: #2a2f3a;
+    --text: #e6e8eb;
+    --text-2: #9aa3b2;
+    --text-3: #6b7280;
+    --accent: #4f8cff;
+    --accent-2: #7aa6ff;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --code-bg: #0b0d12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  /* Layout */
+  .app { display: grid; grid-template-columns: 1fr 380px; height: 100vh; }
+  .main { overflow-y: auto; padding: 24px 32px 80px; }
+  .sidebar { background: var(--panel); border-left: 1px solid var(--border); overflow-y: auto; }
+  /* Header */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 18px; margin-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar h1 { font-size: 18px; font-weight: 600; }
+  .topbar .sub { color: var(--text-2); font-size: 12px; margin-top: 2px; }
+  .env-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 3px 9px; border-radius: 11px; font-size: 11px;
+    background: var(--panel-2); border: 1px solid var(--border);
+  }
+  .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--danger); }
+  .chip.ok .dot { background: var(--success); }
+  .chip.warn .dot { background: var(--warning); }
+  /* Step */
+  .step {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 18px;
+    overflow: hidden;
+  }
+  .step-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .step-title { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); color: #fff; font-size: 12px; font-weight: 600;
+  }
+  .step-body { padding: 18px; }
+  .step-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  /* Inputs */
+  label { display: block; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+  input[type=text], input[type=password], textarea, select {
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    transition: border-color .15s;
+  }
+  input:focus, textarea:focus, select:focus {
+    outline: none; border-color: var(--accent);
+  }
+  textarea { resize: vertical; min-height: 80px; font-family: ui-monospace, "Cascadia Code", Consolas, monospace; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn:hover { background: #262b35; border-color: #3a4150; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-2); }
+  .btn.success { background: var(--success); border-color: var(--success); color: #fff; }
+  .btn.danger { background: var(--danger); border-color: var(--danger); color: #fff; }
+  .btn.ghost { background: transparent; }
+  .btn.sm { padding: 4px 10px; font-size: 12px; }
+  /* Materials */
+  .mat-list { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; }
+  .mat-item {
+    display: flex; gap: 10px; padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .mat-item:hover { border-color: var(--accent); }
+  .mat-item.selected { border-color: var(--accent); background: rgba(79,140,255,0.06); }
+  .mat-cb { flex-shrink: 0; padding-top: 2px; }
+  .mat-meta { flex: 1; min-width: 0; }
+  .mat-title { font-weight: 500; margin-bottom: 3px; }
+  .mat-url { font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mat-snippet { font-size: 12px; color: var(--text-2); margin-top: 5px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Editor */
+  .editor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; min-height: 360px; }
+  .editor-pane { display: flex; flex-direction: column; }
+  .editor-pane textarea { flex: 1; min-height: 360px; font-size: 13px; }
+  .preview-pane {
+    background: #fff; color: #222; border-radius: 6px;
+    padding: 20px 24px; overflow-y: auto; min-height: 360px;
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.8;
+  }
+  .preview-pane img { max-width: 100%; display: block; margin: 12px auto; border-radius: 4px; }
+  .preview-pane h1 { font-size: 20px; margin: 0 0 16px; text-align: center; }
+  .preview-pane h2 { font-size: 17px; margin: 22px 0 12px; }
+  .preview-pane h3 { font-size: 15px; margin: 18px 0 10px; }
+  .preview-pane p { margin-bottom: 12px; font-size: 15px; }
+  .preview-pane blockquote { border-left: 3px solid #ddd; padding: 8px 14px; color: #666; background: #f9f9f9; margin: 12px 0; }
+  .preview-pane code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+  .preview-pane a { color: #576b95; }
+  /* Image gallery */
+  .img-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; }
+  .img-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .img-card .thumb { width: 100%; aspect-ratio: 16/9; object-fit: cover; background: #000; display: block; }
+  .img-card .meta { padding: 8px 10px; }
+  .img-card .alt { font-size: 12px; color: var(--text-2); margin-bottom: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .img-card .status { font-size: 11px; color: var(--text-3); display: flex; justify-content: space-between; }
+  .img-card .status.ready { color: var(--success); }
+  .img-card .status.failed { color: var(--danger); }
+  .img-card .status.running { color: var(--warning); }
+  /* Sidebar log */
+  .sidebar-section { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .sidebar-section h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-2); margin-bottom: 10px; }
+  .log-box {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    max-height: 360px;
+    overflow-y: auto;
+  }
+  .log-line { color: var(--text-2); margin-bottom: 2px; }
+  .log-line.info { color: var(--text); }
+  .log-line.success { color: var(--success); }
+  .log-line.warn { color: var(--warning); }
+  .log-line.error { color: var(--danger); }
+  .kv { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; }
+  .kv .k { color: var(--text-2); }
+  .kv .v { color: var(--text); font-family: ui-monospace, Consolas, monospace; }
+  /* Spinner */
+  .spinner {
+    display: inline-block; width: 12px; height: 12px;
+    border: 2px solid var(--text-3); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* Toast */
+  .toast-host { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    padding: 10px 16px; border-radius: 6px; min-width: 240px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text); font-size: 13px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    animation: slideIn .2s ease-out;
+  }
+  .toast.success { border-color: var(--success); }
+  .toast.error { border-color: var(--danger); }
+  .toast.warn { border-color: var(--warning); }
+  @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } }
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2f3a; border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a4150; }
+  /* Progress */
+  .progress {
+    width: 100%; height: 4px; background: var(--border); border-radius: 2px;
+    overflow: hidden; margin-top: 8px; display: none;
+  }
+  .progress.active { display: block; }
+  .progress-bar {
+    height: 100%; background: var(--accent);
+    animation: indet 1.4s ease-in-out infinite;
+    width: 30%;
+  }
+  @keyframes indet {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .help { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; background: var(--bg); border: 1px solid var(--border); color: var(--text-2); }
+  .hidden { display: none !important; }
+  /* Paragraph list */
+  .para-list { display: flex; flex-direction: column; gap: 6px; max-height: 360px; overflow-y: auto; }
+  .para-item {
+    display: flex; align-items: stretch; gap: 8px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: border-color .15s;
+  }
+  .para-item:hover { border-color: var(--accent); }
+  .para-item.highlight { border-color: var(--accent); background: rgba(79,140,255,0.08); }
+  .para-num {
+    flex-shrink: 0; width: 24px; text-align: center;
+    padding: 4px 0; border-radius: 4px; font-size: 11px;
+    background: var(--panel-2); color: var(--text-2); align-self: flex-start;
+  }
+  .para-item.heading .para-num { background: var(--accent); color: #fff; }
+  .para-item.image .para-num { background: var(--warning); color: #000; }
+  .para-text {
+    flex: 1; min-width: 0; font-size: 12px; line-height: 1.5;
+    color: var(--text); overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  }
+  .para-actions { display: flex; gap: 4px; flex-shrink: 0; }
+  .para-item.editing { flex-direction: column; }
+  .para-item.editing .para-text { display: none; }
+  .para-edit-area {
+    width: 100%; min-height: 80px; padding: 8px;
+    background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 4px; color: var(--text); font-family: inherit; font-size: 12px;
+    resize: vertical;
+  }
+  .para-edit-actions { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10000; animation: fadeIn .15s;
+  }
+  @keyframes fadeIn { from { opacity: 0; } }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; width: 90%; max-width: 560px; max-height: 90vh;
+    overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+  }
+  .modal-head h2 { font-size: 15px; font-weight: 600; }
+  .modal-body { padding: 20px; }
+  .modal-foot {
+    padding: 14px 20px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .field { margin-bottom: 14px; }
+  .field .label-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .field label { margin: 0; }
+  .field .hint { font-size: 11px; color: var(--text-3); }
+  .field .clear-btn {
+    background: none; border: none; color: var(--text-3);
+    cursor: pointer; font-size: 11px; padding: 2px 6px;
+  }
+  .field .clear-btn:hover { color: var(--danger); }
+  .status-line {
+    padding: 8px 12px; border-radius: 6px; font-size: 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    margin-top: 12px;
+  }
+  .status-line.ok { border-color: var(--success); color: var(--success); }
+  .status-line.err { border-color: var(--danger); color: var(--danger); }
+  /* Prompt dialog (reused) */
+  .prompt-modal .modal { max-width: 480px; }
+  .prompt-modal .modal-body label { display: block; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <!-- Topbar -->
+    <div class="topbar">
+      <div>
+        <h1>公众号发布工作台</h1>
+        <div class="sub">从话题到草稿箱，一站完成</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <div class="env-chips" id="envChips"></div>
+        <button class="btn sm" id="btnSettings">⚙️ 设置</button>
+      </div>
+    </div>
+
+    <!-- Step 1: Topic -->
+    <div class="step" data-step="1">
+      <div class="step-head">
+        <div class="step-title"><span class="step-num">1</span>话题与素材</div>
+        <div class="step-actions">
+          <button class="btn" id="btnSearch">🔍 搜索素材</button>
+          <button class="btn ghost sm" id="btnClearMat">清空</button>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="row">
+          <div>
+            <label>话题 <span class="badge">必填</span></label>
+            <input type="text" id="topic" placeholder="例：Claude 4.5 发布、OpenAI o3 推理突破">
+          </div>
+          <div>
+            <label>风格偏好（可选）</label>
+            <input type="text" id="styleHint" placeholder="例：偏技术深度 / 偏商业分析 / 通俗易懂">
+          </div>
+        </div>
+        <label>额外要求（可选）</label>
+        <textarea id="extraReq" rows="2" placeholder="例：必须包含中国厂商对比；面向开发者；控制在 1000 字内..."></textarea>
+
+        <label style="margin-top: 14px;">素材（点击选择参与写作的素材）</label>
+        <div class="mat-list" id="matList">
+          <div class="help">输入话题后点击「搜索素材」开始</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Write -->
+    <div class="step" data-step="2">
+      <div class="step-head">
+        <div class="step-title"><span class="step-num">2</span>撰写文章</div>
+        <div class="step-actions">
+          <button class="btn primary" id="btnWrite">✍️ 一键写文章</button>
+          <button class="btn ghost sm" id="btnApplyMat">使用全部素材</button>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="row">
+          <div>
+            <label>标题</label>
+            <input type="text" id="title" placeholder="从 Markdown 第一行自动提取">
+          </div>
+          <div>
+            <label>作者</label>
+            <input type="text" id="author" value="AI科技观察">
+          </div>
+        </div>
+        <label>Markdown 源码（可手动编辑）</label>
+        <div class="editor-grid">
+          <div class="editor-pane">
+            <textarea id="markdown" placeholder="点击「一键写文章」由 Claude 生成，或直接粘贴 Markdown..."></textarea>
+          </div>
+          <div class="preview-pane" id="preview">
+            <div style="color: #999; text-align: center; padding-top: 60px;">实时预览</div>
+          </div>
+        </div>
+        <div class="progress" id="writeProgress"><div class="progress-bar"></div></div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:16px; margin-bottom:8px;">
+          <label style="margin:0;">段落操作（点击可重写 / 编辑）</label>
+          <button class="btn sm" id="btnRefreshParas">🔄 刷新段落列表</button>
+        </div>
+        <div id="paraList" class="para-list">
+          <div class="help">尚无文章，先在 Step 1 写文章后回到这里</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Images -->
+    <div class="step" data-step="3">
+      <div class="step-head">
+        <div class="step-title"><span class="step-num">3</span>配图与封面</div>
+        <div class="step-actions">
+          <button class="btn" id="btnParseImgs">🔄 解析配图标记</button>
+          <button class="btn primary" id="btnGenAll">🎨 生成全部配图</button>
+        </div>
+      </div>
+      <div class="step-body">
+        <div class="help">解析 Markdown 中的 <code>IMAGE:</code> 标记和封面 prompt，可单独重新生成单张</div>
+        <div style="margin: 12px 0 14px;">
+          <label>封面图 Prompt</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="coverPrompt" placeholder="封面图英文描述">
+            <button class="btn primary" id="btnGenCover">生成封面</button>
+          </div>
+        </div>
+        <div class="img-grid" id="imgGrid">
+          <div class="help">尚未解析</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Publish -->
+    <div class="step" data-step="4">
+      <div class="step-head">
+        <div class="step-title"><span class="step-num">4</span>上传并发布到草稿箱</div>
+      </div>
+      <div class="step-body">
+        <div class="row-3">
+          <div>
+            <label>封面图</label>
+            <div id="coverStatus" class="kv"><span class="k">未上传</span><span class="v">—</span></div>
+          </div>
+          <div>
+            <label>内嵌图片</label>
+            <div id="inlineStatus" class="kv"><span class="k">未上传</span><span class="v">—</span></div>
+          </div>
+          <div>
+            <label>HTML 转换</label>
+            <div id="htmlStatus" class="kv"><span class="k">未转换</span><span class="v">—</span></div>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button class="btn" id="btnConvert">🔄 转换 Markdown → HTML</button>
+          <button class="btn" id="btnUploadAll">☁️ 一键上传全部图片到微信</button>
+          <button class="btn success" id="btnPublish">🚀 推送到草稿箱</button>
+        </div>
+        <div class="progress" id="publishProgress"><div class="progress-bar"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-section">
+      <h3>会话状态</h3>
+      <div class="kv"><span class="k">话题</span><span class="v" id="sbTopic">—</span></div>
+      <div class="kv"><span class="k">标题</span><span class="v" id="sbTitle">—</span></div>
+      <div class="kv"><span class="k">素材数</span><span class="v" id="sbMat">0</span></div>
+      <div class="kv"><span class="k">配图数</span><span class="v" id="sbImg">0</span></div>
+      <div class="kv"><span class="k">已上传</span><span class="v" id="sbUploaded">0</span></div>
+    </div>
+    <div class="sidebar-section" style="flex: 1; display: flex; flex-direction: column;">
+      <h3>运行日志</h3>
+      <div class="log-box" id="logBox"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-host" id="toastHost"></div>
+
+<!-- Settings Modal -->
+<div class="modal-backdrop hidden" id="settingsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>⚙️ API Key 与模型设置</h2>
+      <button class="btn ghost sm" id="closeSettings">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="help" style="margin-bottom:14px;">
+        配置保存在 <code>config.json</code>，优先于系统环境变量。敏感字段会自动脱敏显示。
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label>APImart API Key <span class="badge">必填</span></label>
+          <span class="hint">生图 + 调 Claude 共用</span>
+        </div>
+        <input type="password" id="cfg_apimart" placeholder="sk-xxx">
+        <button class="clear-btn" onclick="document.getElementById('cfg_apimart').value=''">清空</button>
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label>APImart Base URL</label>
+          <span class="hint">OpenAI 兼容端点</span>
+        </div>
+        <input type="text" id="cfg_apimart_base" placeholder="https://apimart.ai/v1">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label>Claude 模型</label>
+        </div>
+        <input type="text" id="cfg_claude_model" placeholder="claude-sonnet-4-5">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label>生图模型</label>
+          <span class="hint">nano-banana / gpt-image-2 / flux-2-pro 等</span>
+        </div>
+        <input type="text" id="cfg_image_model" placeholder="nano-banana">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label>微信 AppID <span class="badge">发布必填</span></label>
+        </div>
+        <input type="text" id="cfg_appid" placeholder="wx...">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label>微信 AppSecret <span class="badge">发布必填</span></label>
+        </div>
+        <input type="password" id="cfg_appsecret" placeholder="公众号应用密钥">
+      </div>
+      <div class="field">
+        <div class="label-row">
+          <label>Exa API Key <span class="badge">搜索</span></label>
+          <span class="hint">https://exa.ai</span>
+        </div>
+        <input type="password" id="cfg_exa" placeholder="可选，用于素材搜索">
+      </div>
+      <div id="cfgStatus"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="cancelSettings">取消</button>
+      <button class="btn primary" id="saveSettings">💾 保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Prompt Modal (generic) -->
+<div class="modal-backdrop hidden prompt-modal" id="promptModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="promptTitle">输入</h2>
+      <button class="btn ghost sm" id="closePrompt">✕</button>
+    </div>
+    <div class="modal-body">
+      <label id="promptLabel">说明</label>
+      <textarea id="promptInput" rows="4" placeholder=""></textarea>
+      <div class="help" id="promptHint" style="margin-top:6px;"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="cancelPrompt">取消</button>
+      <button class="btn primary" id="okPrompt">确定</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- State ----------
+const state = {
+  materials: [],          // 搜索结果
+  selectedMats: new Set(),// 选中的素材 id (index)
+  imageJobs: [],          // {alt, prompt, status, path?, url?, wechatUrl?, failed?}
+  cover: { prompt: null, status: 'idle', path: null, wechatMediaId: null },
+  markdown: '',
+  html: '',
+  title: '',
+};
+
+// ---------- Utilities ----------
+function $(id) { return document.getElementById(id); }
+function escapeHtml(s) { return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function toast(msg, type='info', ms=3000) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.textContent = msg;
+  $('toastHost').appendChild(el);
+  setTimeout(() => el.remove(), ms);
+}
+
+function log(msg, type='info') {
+  const box = $('logBox');
+  const time = new Date().toTimeString().slice(0,8);
+  const line = document.createElement('div');
+  line.className = 'log-line ' + type;
+  line.textContent = `[${time}] ${msg}`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function api(path, body) {
+  const r = await fetch(path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body || {}),
+  });
+  const data = await r.json();
+  if (!r.ok || data.error) {
+    throw new Error(data.error || ('HTTP ' + r.status));
+  }
+  return data;
+}
+
+function setProgress(id, on) {
+  const el = $(id);
+  if (on) el.classList.add('active');
+  else el.classList.remove('active');
+}
+
+function setBtnDisabled(id, dis) { $(id).disabled = dis; }
+
+// ---------- Env ----------
+async function loadEnv() {
+  try {
+    const s = await (await fetch('/api/status')).json();
+    const host = $('envChips');
+    const labels = {
+      APIMART_API_KEY: 'APImart',
+      WECHAT_APPID: '微信',
+      WECHAT_APPSECRET: '密钥',
+      EXA_API_KEY: 'Exa',
+    };
+    host.innerHTML = '';
+    for (const [k, ok] of Object.entries(s.env)) {
+      const c = document.createElement('span');
+      c.className = 'chip ' + (ok ? 'ok' : 'warn');
+      c.innerHTML = `<span class="dot"></span>${labels[k] || k}`;
+      host.appendChild(c);
+    }
+    log('环境检查完成: ' + Object.entries(s.env).filter(([_,v])=>v).map(([k])=>k).join(', '), 'success');
+  } catch (e) {
+    log('环境检查失败: ' + e.message, 'error');
+  }
+}
+
+// ---------- Step 1: Search ----------
+async function doSearch() {
+  const topic = $('topic').value.trim();
+  if (!topic) { toast('请先输入话题', 'warn'); return; }
+  setBtnDisabled('btnSearch', true);
+  log(`开始搜索: ${topic}`);
+  try {
+    const r = await api('/api/search', { topic });
+    state.materials = r.results;
+    state.selectedMats = new Set();
+    renderMaterials();
+    $('sbTopic').textContent = topic.slice(0, 20);
+    log(`搜索完成，共 ${r.results.length} 条`, 'success');
+  } catch (e) {
+    toast('搜索失败: ' + e.message, 'error');
+    log('搜索失败: ' + e.message, 'error');
+  } finally {
+    setBtnDisabled('btnSearch', false);
+  }
+}
+
+function renderMaterials() {
+  const list = $('matList');
+  if (state.materials.length === 0) {
+    list.innerHTML = '<div class="help">暂无素材</div>';
+    return;
+  }
+  list.innerHTML = state.materials.map((m, i) => `
+    <div class="mat-item ${state.selectedMats.has(i) ? 'selected' : ''}" data-i="${i}">
+      <input type="checkbox" class="mat-cb" ${state.selectedMats.has(i) ? 'checked' : ''}>
+      <div class="mat-meta">
+        <div class="mat-title">${escapeHtml(m.title)}</div>
+        <div class="mat-url">${escapeHtml(m.url)}</div>
+        <div class="mat-snippet">${escapeHtml(m.snippet || '')}</div>
+      </div>
+    </div>
+  `).join('');
+  list.querySelectorAll('.mat-item').forEach(el => {
+    el.onclick = (e) => {
+      const i = +el.dataset.i;
+      if (state.selectedMats.has(i)) state.selectedMats.delete(i);
+      else state.selectedMats.add(i);
+      renderMaterials();
+      updateSidebar();
+    };
+  });
+  updateSidebar();
+}
+
+function clearMaterials() {
+  state.materials = [];
+  state.selectedMats.clear();
+  renderMaterials();
+}
+
+function selectAllMats() {
+  state.selectedMats = new Set(state.materials.map((_, i) => i));
+  renderMaterials();
+}
+
+// ---------- Step 2: Write ----------
+async function doWrite() {
+  const topic = $('topic').value.trim();
+  if (!topic) { toast('请先输入话题', 'warn'); return; }
+  setBtnDisabled('btnWrite', true);
+  setProgress('writeProgress', true);
+  const mats = state.selectedMats.size > 0
+    ? [...state.selectedMats].map(i => state.materials[i])
+    : state.materials;
+  log(`调用 Claude 写文章，使用 ${mats.length} 条素材`);
+  try {
+    const r = await api('/api/write', {
+      topic,
+      materials: mats,
+      style_hint: $('styleHint').value,
+      extra_requirements: $('extraReq').value,
+    });
+    state.markdown = r.markdown;
+    state.title = r.title;
+    $('markdown').value = r.markdown;
+    $('title').value = r.title;
+    if (r.cover_prompt) {
+      $('coverPrompt').value = r.cover_prompt;
+      state.cover.prompt = r.cover_prompt;
+    }
+    // 自动解析图片
+    state.imageJobs = r.image_marks.map((m, i) => ({
+      id: i,
+      alt: m.alt,
+      prompt: m.prompt,
+      status: 'idle',
+    }));
+    renderImages();
+    updatePreview();
+    renderParagraphs();
+    updateSidebar();
+    log(`文章已生成: ${r.title}，含 ${r.image_marks.length} 张配图`, 'success');
+    toast('文章已生成', 'success');
+  } catch (e) {
+    toast('写文章失败: ' + e.message, 'error');
+    log('写文章失败: ' + e.message, 'error');
+  } finally {
+    setBtnDisabled('btnWrite', false);
+    setProgress('writeProgress', false);
+  }
+}
+
+function updatePreview() {
+  const md = $('markdown').value;
+  state.markdown = md;
+  // 提取标题
+  const m = md.match(/^#\s+(.+?)(?:\n|$)/);
+  if (m) {
+    state.title = m[1].trim();
+    if (!$('title').value) $('title').value = state.title;
+  }
+  // 简易 Markdown 渲染（仅用于实时预览，不上传到微信）
+  const html = renderMdPreview(md);
+  $('preview').innerHTML = html || '<div style="color:#999;text-align:center;padding-top:60px;">实时预览</div>';
+  updateSidebar();
+}
+
+function renderMdPreview(md) {
+  if (!md) return '';
+  let html = escapeHtml(md);
+  // 标题
+  html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>')
+             .replace(/^##### (.+)$/gm, '<h5>$1</h5>')
+             .replace(/^#### (.+)$/gm, '<h4>$1</h4>')
+             .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+             .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+             .replace(/^# (.+)$/gm, '<h1>$1</h1>');
+  // 引用
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
+  // 粗体/斜体
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+             .replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // 链接
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+  // 图片（IMAGE 标记显示为占位）
+  html = html.replace(/!\[([^\]]*)\]\(IMAGE:[^)]+\)/g, '<div style="border:2px dashed #ccc;padding:30px;text-align:center;color:#999;margin:12px 0;">🖼️ 配图：$1</div>');
+  html = html.replace(/!\[([^\]]*)\]\((https?:[^)]+)\)/g, '<img alt="$1" src="$2">');
+  // 代码
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // 列表
+  html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+  // 段落
+  html = html.split(/\n\n+/).map(p => {
+    if (/^<(h\d|ul|ol|li|blockquote|img|div)/.test(p.trim())) return p;
+    return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+  }).join('\n');
+  return html;
+}
+
+// ---------- Step 3: Images ----------
+function parseImageMarks() {
+  const md = $('markdown').value;
+  const marks = [...md.matchAll(/!\[([^\]]*)\]\(IMAGE:\s*([^)]+)\)/g)];
+  state.imageJobs = marks.map((m, i) => ({
+    id: i,
+    alt: m[1],
+    prompt: m[2].trim(),
+    status: 'idle',
+  }));
+  // 解析封面
+  const coverMatch = md.match(/\(COVER_PROMPT:\s*([^)]+)\)/);
+  if (coverMatch && !$('coverPrompt').value) {
+    $('coverPrompt').value = coverMatch[1].trim();
+    state.cover.prompt = coverMatch[1].trim();
+  }
+  renderImages();
+  log(`解析出 ${state.imageJobs.length} 张配图${state.cover.prompt ? ' + 1 张封面' : ''}`, 'info');
+  updateSidebar();
+}
+
+function renderImages() {
+  const grid = $('imgGrid');
+  const items = [...state.imageJobs, { isCover: true, ...state.cover, alt: '封面图' }];
+  if (items.length === 0 || (items.length === 1 && !items[0].isCover)) {
+    grid.innerHTML = '<div class="help">尚未解析，先在 Step 2 写文章或手动编辑 Markdown</div>';
+    return;
+  }
+  grid.innerHTML = items.map((it, idx) => {
+    if (it.isCover) {
+      return `
+        <div class="img-card" data-cover>
+          <img class="thumb" src="${it.path ? '/workspace/image?name=' + encodeURIComponent(it.path.split(/[/\\]/).pop()) : ''}" onerror="this.style.background='#222'">
+          <div class="meta">
+            <div class="alt">📌 ${escapeHtml(it.alt || '封面图')}</div>
+            <div class="status ${it.status}">${it.status}</div>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="img-card" data-i="${it.id}">
+        <img class="thumb" src="${it.path ? '/workspace/image?name=' + encodeURIComponent(it.path.split(/[/\\]/).pop()) : ''}" onerror="this.style.background='#222'">
+        <div class="meta">
+          <div class="alt" title="${escapeHtml(it.prompt)}">${escapeHtml(it.alt || '配图')}</div>
+          <div class="status ${it.status}">${statusText(it.status)}</div>
+          <div style="margin-top: 6px; display: flex; gap: 4px;">
+            <button class="btn sm" onclick="genOne(${it.id})">重生成</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function statusText(s) {
+  return ({idle: '待生成', running: '⏳ 生成中...', ready: '✅ 已生成', failed: '❌ 失败'})[s] || s;
+}
+
+async function genOne(id) {
+  const job = state.imageJobs.find(x => x.id === id);
+  if (!job) return;
+  job.status = 'running';
+  renderImages();
+  log(`生成图片 ${id + 1}: ${job.prompt.slice(0, 40)}...`);
+  try {
+    const r = await api('/api/image', {
+      prompt: job.prompt,
+      output_name: `img_${Date.now()}_${id}.png`,
+    });
+    job.path = r.path;
+    job.url = r.url;
+    job.status = 'ready';
+    log(`图片 ${id + 1} 生成完成`, 'success');
+  } catch (e) {
+    job.status = 'failed';
+    log(`图片 ${id + 1} 生成失败: ${e.message}`, 'error');
+  }
+  renderImages();
+  updateSidebar();
+}
+
+async function genCover() {
+  const prompt = $('coverPrompt').value.trim();
+  if (!prompt) { toast('请先填写封面 prompt', 'warn'); return; }
+  state.cover.prompt = prompt;
+  state.cover.status = 'running';
+  renderImages();
+  log('生成封面...');
+  try {
+    const r = await api('/api/image', {
+      prompt,
+      output_name: `cover_${Date.now()}.png`,
+    });
+    state.cover.path = r.path;
+    state.cover.status = 'ready';
+    log('封面生成完成', 'success');
+  } catch (e) {
+    state.cover.status = 'failed';
+    log('封面生成失败: ' + e.message, 'error');
+  }
+  renderImages();
+  updateSidebar();
+}
+
+async function genAllImages() {
+  for (const job of state.imageJobs) {
+    if (job.status !== 'ready') await genOne(job.id);
+  }
+  if (state.cover.prompt && state.cover.status !== 'ready') await genCover();
+  toast('全部配图完成', 'success');
+}
+
+// ---------- Step 4: Publish ----------
+async function doConvert() {
+  if (!state.markdown) { toast('请先生成文章', 'warn'); return; }
+  // 收集已上传的微信 URL
+  const imageMap = {};
+  for (const job of state.imageJobs) {
+    if (job.status === 'ready' && job.wechatUrl) {
+      // 找到对应 prompt 字符串作为 key
+      imageMap[`IMAGE: ${job.prompt}`] = job.wechatUrl;
+      // 也尝试仅用 prompt 末尾特征匹配
+    }
+  }
+  log('转换 Markdown → HTML');
+  try {
+    const r = await api('/api/convert', {
+      markdown: state.markdown,
+      image_map: imageMap,
+    });
+    state.html = r.html;
+    $('htmlStatus').innerHTML = '<span class="k">已转换</span><span class="v" style="color:var(--success)">✓</span>';
+    log('HTML 转换完成', 'success');
+  } catch (e) {
+    $('htmlStatus').innerHTML = '<span class="k">转换失败</span><span class="v" style="color:var(--danger)">✗</span>';
+    toast('转换失败: ' + e.message, 'error');
+    log('HTML 转换失败: ' + e.message, 'error');
+  }
+}
+
+async function uploadAll() {
+  if (state.imageJobs.length === 0 && !state.cover.path) {
+    toast('没有可上传的图片', 'warn'); return;
+  }
+  // 上传内嵌图
+  let count = 0;
+  for (const job of state.imageJobs) {
+    if (job.status === 'ready' && !job.wechatUrl) {
+      try {
+        log(`上传图片到微信: ${job.alt}`);
+        const r = await api('/api/upload', { image_path: job.path });
+        job.wechatUrl = r.url;
+        count++;
+      } catch (e) {
+        log(`上传失败: ${e.message}`, 'error');
+      }
+    }
+  }
+  // 上传封面
+  if (state.cover.status === 'ready' && !state.cover.wechatMediaId) {
+    try {
+      log('上传封面到微信...');
+      const r = await api('/api/upload-cover', { image_path: state.cover.path });
+      state.cover.wechatMediaId = r.media_id;
+      $('coverStatus').innerHTML = '<span class="k">已上传</span><span class="v" style="color:var(--success)">✓</span>';
+    } catch (e) {
+      $('coverStatus').innerHTML = '<span class="k">上传失败</span><span class="v" style="color:var(--danger)">✗</span>';
+      log('封面上传失败: ' + e.message, 'error');
+    }
+  }
+  $('inlineStatus').innerHTML = `<span class="k">已上传</span><span class="v" style="color:var(--success)">${count}/${state.imageJobs.length}</span>`;
+  updateSidebar();
+  toast(`上传完成`, 'success');
+}
+
+async function doPublish() {
+  if (!state.html) { toast('请先转换 HTML', 'warn'); return; }
+  if (!state.cover.wechatMediaId) { toast('请先上传封面', 'warn'); return; }
+  if (!$('title').value.trim()) { toast('请填写标题', 'warn'); return; }
+  setBtnDisabled('btnPublish', true);
+  setProgress('publishProgress', true);
+  log('推送到草稿箱...');
+  try {
+    const r = await api('/api/publish', {
+      title: $('title').value.trim(),
+      html: state.html,
+      thumb_media_id: state.cover.wechatMediaId,
+      author: $('author').value || 'AI科技观察',
+    });
+    log(`✅ 发布成功 media_id: ${r.media_id}`, 'success');
+    toast('已推送到草稿箱！请到后台检查', 'success', 5000);
+  } catch (e) {
+    log('发布失败: ' + e.message, 'error');
+    toast('发布失败: ' + e.message, 'error');
+  } finally {
+    setBtnDisabled('btnPublish', false);
+    setProgress('publishProgress', false);
+  }
+}
+
+function updateSidebar() {
+  $('sbTitle').textContent = state.title || '—';
+  $('sbMat').textContent = state.materials.length;
+  $('sbImg').textContent = state.imageJobs.length;
+  const uploaded = state.imageJobs.filter(j => j.wechatUrl).length + (state.cover.wechatMediaId ? 1 : 0);
+  $('sbUploaded').textContent = uploaded;
+}
+
+// ---------- Bindings ----------
+$('btnSearch').onclick = doSearch;
+$('btnClearMat').onclick = clearMaterials;
+$('btnApplyMat').onclick = selectAllMats;
+$('btnWrite').onclick = doWrite;
+let _paraTimer = null;
+$('markdown').addEventListener('input', () => {
+  updatePreview();
+  clearTimeout(_paraTimer);
+  _paraTimer = setTimeout(renderParagraphs, 400);
+});
+$('title').addEventListener('input', e => state.title = e.target.value);
+$('btnParseImgs').onclick = parseImageMarks;
+$('btnGenAll').onclick = genAllImages;
+$('btnGenCover').onclick = genCover;
+$('btnConvert').onclick = doConvert;
+$('btnUploadAll').onclick = uploadAll;
+$('btnPublish').onclick = doPublish;
+$('btnRefreshParas').onclick = () => { renderParagraphs(); toast('段落列表已刷新'); };
+$('btnSettings').onclick = openSettings;
+$('closeSettings').onclick = closeSettings;
+$('cancelSettings').onclick = closeSettings;
+$('saveSettings').onclick = saveSettings;
+$('settingsModal').onclick = e => { if (e.target.id === 'settingsModal') closeSettings(); };
+$('closePrompt').onclick = closePrompt;
+$('cancelPrompt').onclick = closePrompt;
+$('okPrompt').onclick = okPrompt;
+$('promptModal').onclick = e => { if (e.target.id === 'promptModal') closePrompt(); };
+
+// ---------- Settings Modal ----------
+async function openSettings() {
+  try {
+    const r = await api_get('/api/config');
+    const c = r.config || {};
+    $('cfg_apimart').value = c.APIMART_API_KEY || '';
+    $('cfg_apimart_base').value = c.APIMART_BASE_URL || '';
+    $('cfg_claude_model').value = c.CLAUDE_MODEL || '';
+    $('cfg_image_model').value = c.IMAGE_MODEL || '';
+    $('cfg_appid').value = c.WECHAT_APPID || '';
+    $('cfg_appsecret').value = c.WECHAT_APPSECRET || '';
+    $('cfg_exa').value = c.EXA_API_KEY || '';
+    $('cfgStatus').innerHTML = `<div class="status-line">配置文件：${r.config_exists ? '已存在' : '尚未创建'}</div>`;
+  } catch (e) {
+    $('cfgStatus').innerHTML = `<div class="status-line err">加载失败: ${e.message}</div>`;
+  }
+  $('settingsModal').classList.remove('hidden');
+}
+
+function closeSettings() {
+  $('settingsModal').classList.add('hidden');
+}
+
+async function saveSettings() {
+  const data = {
+    APIMART_API_KEY: $('cfg_apimart').value,
+    APIMART_BASE_URL: $('cfg_apimart_base').value,
+    CLAUDE_MODEL: $('cfg_claude_model').value,
+    IMAGE_MODEL: $('cfg_image_model').value,
+    WECHAT_APPID: $('cfg_appid').value,
+    WECHAT_APPSECRET: $('cfg_appsecret').value,
+    EXA_API_KEY: $('cfg_exa').value,
+  };
+  try {
+    const r = await api('/api/config', data);
+    $('cfgStatus').innerHTML = `<div class="status-line ok">✓ 已保存：${r.saved_keys.join(', ')}</div>`;
+    toast('配置已保存', 'success');
+    log('配置已保存: ' + r.saved_keys.join(', '), 'success');
+    loadEnv();
+    setTimeout(closeSettings, 800);
+  } catch (e) {
+    $('cfgStatus').innerHTML = `<div class="status-line err">保存失败: ${e.message}</div>`;
+    toast('保存失败: ' + e.message, 'error');
+  }
+}
+
+async function api_get(path) {
+  const r = await fetch(path);
+  const data = await r.json();
+  if (!r.ok || data.error) throw new Error(data.error || ('HTTP ' + r.status));
+  return data;
+}
+
+// ---------- Generic Prompt Modal ----------
+let promptResolver = null;
+function showPrompt(title, label, defaultValue = '', hint = '') {
+  return new Promise((resolve) => {
+    promptResolver = resolve;
+    $('promptTitle').textContent = title;
+    $('promptLabel').textContent = label;
+    $('promptInput').value = defaultValue;
+    $('promptHint').textContent = hint;
+    $('promptModal').classList.remove('hidden');
+    setTimeout(() => $('promptInput').focus(), 50);
+  });
+}
+function closePrompt() {
+  $('promptModal').classList.add('hidden');
+  if (promptResolver) { promptResolver(null); promptResolver = null; }
+}
+function okPrompt() {
+  $('promptModal').classList.add('hidden');
+  if (promptResolver) { promptResolver($('promptInput').value); promptResolver = null; }
+}
+
+// ---------- Paragraph List ----------
+function parseParagraphs(md) {
+  // 简单切分：按空行
+  const blocks = [];
+  const lines = md.split('\n');
+  let buf = [];
+  let start = 0;
+  let offset = 0;
+  function flush(end) {
+    if (buf.length) {
+      const text = buf.join('\n').trim();
+      if (text) {
+        let t = 'paragraph';
+        if (/^#{1,6}\s/.test(text)) t = 'heading';
+        else if (/^!\[.*\]\(IMAGE:/.test(text)) t = 'image';
+        else if (/^\(COVER_PROMPT:/.test(text)) t = 'cover';
+        blocks.push({ type: t, text, start, end });
+      }
+      buf = [];
+    }
+  }
+  for (const line of lines) {
+    if (!line.trim()) {
+      flush(offset);
+      offset += line.length + 1;
+      start = offset;
+      continue;
+    }
+    if (buf.length === 0) start = offset;
+    buf.push(line);
+    offset += line.length + 1;
+  }
+  flush(offset);
+  return blocks;
+}
+
+function renderParagraphs() {
+  const md = $('markdown').value;
+  const blocks = parseParagraphs(md);
+  const list = $('paraList');
+  if (blocks.length === 0) {
+    list.innerHTML = '<div class="help">文章为空</div>';
+    return;
+  }
+  const typeIcon = { heading: 'H', paragraph: 'P', image: '🖼', cover: '📌' };
+  list.innerHTML = blocks.map((b, i) => `
+    <div class="para-item ${b.type}" data-i="${i}">
+      <span class="para-num">${typeIcon[b.type] || i+1}</span>
+      <div class="para-text" title="${escapeHtml(b.text)}">${escapeHtml(b.text)}</div>
+      <div class="para-actions">
+        ${b.type === 'image' || b.type === 'cover'
+          ? '<button class="btn sm" onclick="event.stopPropagation();editPara(' + i + ')">编辑 prompt</button>'
+          : '<button class="btn sm" onclick="event.stopPropagation();rewritePara(' + i + ')">🔄 重写</button>'}
+        <button class="btn sm" onclick="event.stopPropagation();editPara(' + i + ')">✏️ 编辑</button>
+      </div>
+    </div>
+  `).join('');
+  // 点击段落高亮并在编辑器中定位
+  list.querySelectorAll('.para-item').forEach(el => {
+    el.onclick = () => focusParagraph(+el.dataset.i);
+  });
+}
+
+function focusParagraph(i) {
+  const md = $('markdown').value;
+  const blocks = parseParagraphs(md);
+  const b = blocks[i];
+  if (!b) return;
+  const ta = $('markdown');
+  ta.focus();
+  ta.setSelectionRange(b.start, b.end);
+  // 滚动 textarea 到选区
+  const lineHeight = 20;
+  const linesBefore = md.slice(0, b.start).split('\n').length;
+  ta.scrollTop = Math.max(0, (linesBefore - 5) * lineHeight);
+  // 高亮
+  document.querySelectorAll('.para-item').forEach(el => el.classList.remove('highlight'));
+  const item = document.querySelector(`.para-item[data-i="${i}"]`);
+  if (item) {
+    item.classList.add('highlight');
+    item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+}
+
+async function rewritePara(i) {
+  const md = $('markdown').value;
+  const blocks = parseParagraphs(md);
+  const b = blocks[i];
+  if (!b) return;
+  const instr = await showPrompt(
+    `重写第 ${i+1} 段`,
+    '改写要求（留空 = 让 Claude 自动润色）',
+    '',
+    `原文：${b.text.slice(0, 80)}${b.text.length > 80 ? '...' : ''}`
+  );
+  if (instr === null) return;
+  log(`重写段落 ${i+1}：${b.text.slice(0,30)}...`);
+  setBtnDisabled('btnWrite', true);
+  try {
+    const r = await api('/api/rewrite', {
+      article: md,
+      paragraph_index: i,
+      instructions: instr,
+    });
+    state.markdown = r.new_article;
+    $('markdown').value = r.new_article;
+    updatePreview();
+    renderParagraphs();
+    log(`段落 ${i+1} 已重写`, 'success');
+    toast('重写完成', 'success');
+  } catch (e) {
+    toast('重写失败: ' + e.message, 'error');
+    log('重写失败: ' + e.message, 'error');
+  } finally {
+    setBtnDisabled('btnWrite', false);
+  }
+}
+
+function editPara(i) {
+  const list = $('paraList');
+  const item = list.querySelector(`.para-item[data-i="${i}"]`);
+  if (!item) return;
+  if (item.classList.contains('editing')) return;
+  const md = $('markdown').value;
+  const blocks = parseParagraphs(md);
+  const b = blocks[i];
+  if (!b) return;
+  item.classList.add('editing');
+  const editHtml = `
+    <textarea class="para-edit-area">${escapeHtml(b.text)}</textarea>
+    <div class="para-edit-actions">
+      <button class="btn sm ghost" onclick="cancelEdit(${i})">取消</button>
+      <button class="btn sm primary" onclick="saveEdit(${i})">保存</button>
+    </div>
+  `;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'width:100%; display:flex; flex-direction:column;';
+  wrap.innerHTML = editHtml;
+  item.appendChild(wrap);
+}
+
+function cancelEdit(i) {
+  const item = $('paraList').querySelector(`.para-item[data-i="${i}"]`);
+  if (item) {
+    item.classList.remove('editing');
+    const extra = item.querySelectorAll('div[style*="width:100%"]');
+    extra.forEach(e => e.remove());
+  }
+}
+
+function saveEdit(i) {
+  const item = $('paraList').querySelector(`.para-item[data-i="${i}"]`);
+  if (!item) return;
+  const ta = item.querySelector('.para-edit-area');
+  if (!ta) return;
+  const newText = ta.value;
+  const md = $('markdown').value;
+  const blocks = parseParagraphs(md);
+  const b = blocks[i];
+  if (!b) return;
+  const newMd = md.slice(0, b.start) + newText + md.slice(b.end);
+  state.markdown = newMd;
+  $('markdown').value = newMd;
+  updatePreview();
+  renderParagraphs();
+  log(`段落 ${i+1} 已手动修改`, 'success');
+  toast('已保存', 'success');
+}
+
+// Init
+loadEnv();
+log('工作台就绪', 'success');
+</script>
+</body>
+</html>
